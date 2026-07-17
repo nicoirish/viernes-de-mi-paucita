@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Paula</title>
+<style>
+  :root{
+    --rose: #f99aaa;
+    --rose-deep: #e8748c;
+    --plum: #5c2a3a;
+    --blush: #fff3f5;
+    --cream: #fffaf8;
+    --gold: #f0c37a;
+    --lav: #ffd9e0;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background: radial-gradient(circle at 50% 20%, var(--blush), var(--cream) 70%);
+    font-family: 'Quicksand', 'Segoe UI', sans-serif;
+    overflow: hidden;
+  }
+
+  @font-face{
+    font-family: 'PlayfairFallback';
+    src: local('Playfair Display');
+  }
+
+  .stage{
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* Floating petals */
+  .petal{
+    position:absolute;
+    top:-40px;
+    width: 14px;
+    height: 14px;
+    background: var(--rose);
+    border-radius: 100% 0 100% 0;
+    opacity: 0.75;
+    animation: fall linear infinite;
+    pointer-events:none;
+  }
+
+  @keyframes fall{
+    0%{ transform: translateY(0) rotate(0deg); opacity: 0; }
+    10%{ opacity: 0.8; }
+    100%{ transform: translateY(110vh) rotate(300deg); opacity: 0; }
+  }
+
+  /* ENVELOPE */
+  /* GAME SCREEN */
+  #gameScreen{
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index: 6;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #gameScreen.hide{
+    opacity:0;
+    transform: scale(0.9);
+    pointer-events:none;
+  }
+
+  .game-title{
+    font-family: 'Georgia', serif;
+    color: var(--plum);
+    font-size: 24px;
+    margin-bottom: 6px;
+    text-align:center;
+  }
+  .game-sub{
+    color: var(--rose-deep);
+    font-size: 14px;
+    margin-bottom: 22px;
+    text-align:center;
+    opacity: 0.85;
+  }
+
+  .meter{
+    width: 260px;
+    height: 22px;
+    background: var(--lav);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(92,42,58,0.15);
+    margin-bottom: 8px;
+  }
+  .meter-fill{
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--rose), var(--rose-deep));
+    border-radius: 20px;
+    transition: width 0.25s ease;
+  }
+  .meter-label{
+    font-size: 13px;
+    color: var(--plum);
+    opacity: 0.7;
+    margin-bottom: 30px;
+  }
+
+  .catch-zone{
+    position: relative;
+    width: 100vw;
+    height: 55vh;
+    max-height: 420px;
+  }
+
+  .falling-heart{
+    position: absolute;
+    top: -30px;
+    font-size: 30px;
+    cursor: pointer;
+    user-select: none;
+    animation: dropHeart linear forwards;
+    filter: drop-shadow(0 4px 6px rgba(92,42,58,0.2));
+  }
+  .falling-heart:active{ transform: scale(1.3); }
+
+  @keyframes dropHeart{
+    from{ transform: translateY(0); }
+    to{ transform: translateY(60vh); }
+  }
+
+  .pop{
+    position: absolute;
+    font-size: 22px;
+    pointer-events:none;
+    animation: popFade 0.5s ease forwards;
+  }
+  @keyframes popFade{
+    from{ opacity:1; transform: translateY(0) scale(1); }
+    to{ opacity:0; transform: translateY(-30px) scale(1.4); }
+  }
+
+  #envelopeWrap{
+    cursor: pointer;
+    transition: transform 0.4s ease, opacity 0.5s ease;
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #envelopeWrap.ready{
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #envelopeWrap:hover{ transform: translateY(-6px) scale(1.02); }
+  #envelopeWrap.hide{
+    opacity: 0;
+    transform: scale(0.85);
+    pointer-events: none;
+  }
+
+  .envelope{
+    position: relative;
+    width: 260px;
+    height: 170px;
+    background: var(--rose);
+    border-radius: 6px;
+    box-shadow: 0 20px 40px rgba(92,42,58,0.25);
+  }
+
+  .flap{
+    position: absolute;
+    top:0; left:0;
+    width: 100%; height: 0;
+    border-left: 130px solid transparent;
+    border-right: 130px solid transparent;
+    border-top: 90px solid var(--rose-deep);
+    transform-origin: top;
+    transition: transform 0.6s cubic-bezier(.6,-0.28,.74,.05);
+    z-index: 3;
+  }
+  #envelopeWrap.open .flap{ transform: rotateX(180deg); }
+
+  .body-front{
+    position:absolute;
+    bottom:0; left:0;
+    width:100%; height: 60%;
+    background: var(--rose);
+    border-radius: 0 0 6px 6px;
+    z-index: 2;
+  }
+
+  .seal{
+    position:absolute;
+    top: 62px; left: 50%;
+    transform: translateX(-50%);
+    width: 46px; height: 46px;
+    background: var(--gold);
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 20px;
+    z-index: 4;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+
+  .hint{
+    text-align:center;
+    margin-top: 22px;
+    color: var(--plum);
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    opacity: 0.75;
+  }
+
+  /* LETTER CARD */
+  #letter{
+    position: absolute;
+    max-width: 560px;
+    width: 88%;
+    max-height: 86vh;
+    overflow-y: auto;
+    background: var(--cream);
+    border-radius: 18px;
+    padding: 48px 42px;
+    box-shadow: 0 30px 60px rgba(92,42,58,0.18);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+    transition: opacity 0.8s ease 0.5s, transform 0.8s ease 0.5s;
+    border: 1px solid var(--lav);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #letter::-webkit-scrollbar{ width: 6px; }
+  #letter::-webkit-scrollbar-thumb{ background: var(--rose); border-radius: 10px; }
+  #letter.show{ opacity: 1; transform: translateY(0) scale(1); }
+
+  .eyebrow{
+    color: var(--rose-deep);
+    letter-spacing: 3px;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  h1{
+    font-family: 'Georgia', 'Playfair Display', serif;
+    color: var(--plum);
+    font-size: 34px;
+    margin: 0 0 20px 0;
+    line-height: 1.25;
+  }
+
+  p.msg{
+    color: #7a4655;
+    font-size: 17px;
+    line-height: 1.8;
+    margin: 0 0 10px 0;
+  }
+
+  .signature{
+    margin-top: 26px;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    color: var(--rose-deep);
+    font-size: 19px;
+  }
+
+  .hearts{
+    margin-top: 18px;
+    font-size: 22px;
+    letter-spacing: 6px;
+  }
+
+  #musicNote{
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    background: var(--rose);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 20px rgba(92,42,58,0.25);
+    opacity: 0;
+    transform: translateY(0);
+    transition: opacity 0.6s ease 1s, transform 0.2s ease, background 0.2s ease;
+  }
+  #musicNote.show{ opacity: 1; }
+  #musicNote:hover{ transform: translateY(-2px); background: var(--rose-deep); }
+  #musicNote:active{ transform: translateY(0) scale(0.97); }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal{ animation: none; display:none; }
+    #envelopeWrap, .flap, #letter{ transition: none; }
+  }
+
+  @media (max-width: 480px){
+    h1{ font-size: 24px; }
+    #letter{ padding: 30px 20px; max-height: 82vh; }
+    p.msg{ font-size: 15px; }
+    .envelope{ width: 220px; height: 145px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <div id="gameScreen">
+    <div class="game-title">Buenos diitas mi muñequita lindita 💗</div>
+    <div class="game-sub">Toca 15 corazones antes de que caigan para desbloquear una cartica c:</div>
+    <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+    <div class="meter-label"><span id="countLabel">0</span> / 15</div>
+    <div class="catch-zone" id="catchZone"></div>
+  </div>
+
+  <div id="envelopeWrap">
+    <div class="envelope">
+      <div class="flap"></div>
+      <div class="body-front"></div>
+      <div class="seal">💌</div>
+    </div>
+    <div class="hint">Toca el sobre para abrirlo mi niña preciosita :)</div>
+  </div>
+
+  <div id="letter">
+    <div class="eyebrow">Viernes de cierre con muchis amor, mi amorcito lindo 🩷.</div>
+    <h1>Esta semana fue durita, pero la supiste llevar,<br>y hoy la terminas en grande mi niña bebe c: </h1>
+    <p class="msg">
+      Hoy acaba una semanita pesada para ti mi niña hermosita, pero créeme que no puedo dejar de sentirme más orgulloso de ti porque la sacaste adelante con esfuerzo y dedicación mi niña bonita y eso es lo que cuenta mi vida hermosaa.
+    </p>
+    <p class="msg">
+      Confío en que acabarás la semana siendo la mejor de todas (como siempre obvioo), de verdad que tu me haces ser el hombre más orgullosoo del planeta mi vida hermosa, me siento muy muy afortunado de tenerte mi niña bonita y las palabras no me alcanzan para describirte lo orgulloso y lo enamorado que estoy de ti mi preciosa princesita.
+    </p>
+    <p>Te amo con todas las fuerzas de mi ser mi niña hermosa, hoy te va a ir excelentísimo mi esposita divina ponle cuidado de que así pasara. Disfruta muchis mi niña linda que apenas acabe este diita, llegará el sábadito e iremos a viajar junticos, teniendo así un descansito lindo y tranquilito mi reinita lindita c: </p>
+    <div class="signature">Te amo infinitamente, preciosa. Hoy te irá excelente. Estoy extremadamente orgullos de ti, amor de mi vida <3.</div>
+    <div class="hearts">💗 💗 💗</div>
+  </div>
+
+</div>
+
+<button id="musicNote" type="button" aria-label="Reproducir o pausar la canción">
+  <span id="musicIcon">🎵</span>
+  <span id="musicLabel">Sonando para ti 😘</span>
+</button>
+
+<audio id="song" loop>
+  <source src="Luis Miguel - Júrame (Karaoke).mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  // Floating petals background
+  const stage = document.getElementById('stage');
+  const petalCount = 18;
+  for(let i=0;i<petalCount;i++){
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.style.left = Math.random()*100 + 'vw';
+    p.style.animationDuration = (8 + Math.random()*10) + 's';
+    p.style.animationDelay = (Math.random()*10) + 's';
+    p.style.background = Math.random() > 0.5 ? '#f99aaa' : '#ffd9e0';
+    p.style.width = p.style.height = (8 + Math.random()*10) + 'px';
+    stage.appendChild(p);
+  }
+
+  const envelopeWrap = document.getElementById('envelopeWrap');
+  const letter = document.getElementById('letter');
+  const musicNote = document.getElementById('musicNote');
+  const musicIcon = document.getElementById('musicIcon');
+  const musicLabel = document.getElementById('musicLabel');
+  const song = document.getElementById('song');
+  const gameScreen = document.getElementById('gameScreen');
+  const catchZone = document.getElementById('catchZone');
+  const meterFill = document.getElementById('meterFill');
+  const countLabel = document.getElementById('countLabel');
+  let opened = false;
+
+  // --- MINI GAME: atrapa los corazones ---
+  const TARGET = 15;
+  let caught = 0;
+  let gameWon = false;
+  const heartEmojis = ['💗','💖','💕','💓'];
+
+  function spawnHeart(){
+    if(gameWon) return;
+    const h = document.createElement('div');
+    h.className = 'falling-heart';
+    h.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+    h.style.left = (5 + Math.random()*85) + 'vw';
+    const duration = 3.5 + Math.random()*2.5;
+    h.style.animationDuration = duration + 's';
+    catchZone.appendChild(h);
+
+    h.addEventListener('animationend', () => h.remove());
+
+    h.addEventListener('click', () => {
+      if(gameWon) return;
+      const rect = h.getBoundingClientRect();
+      const zoneRect = catchZone.getBoundingClientRect();
+      const pop = document.createElement('div');
+      pop.className = 'pop';
+      pop.textContent = '+1 💗';
+      pop.style.left = (rect.left - zoneRect.left) + 'px';
+      pop.style.top = (rect.top - zoneRect.top) + 'px';
+      catchZone.appendChild(pop);
+      setTimeout(()=>pop.remove(), 500);
+
+      h.remove();
+      caught++;
+      countLabel.textContent = caught;
+      meterFill.style.width = Math.min(100, (caught/TARGET)*100) + '%';
+
+      if(caught >= TARGET){
+        gameWon = true;
+        clearInterval(spawnTimer);
+        document.querySelectorAll('.falling-heart').forEach(el => el.remove());
+        setTimeout(() => {
+          gameScreen.classList.add('hide');
+          envelopeWrap.classList.add('ready');
+        }, 500);
+      }
+    });
+  }
+
+  const spawnTimer = setInterval(spawnHeart, 650);
+
+  let fadeInterval = null;
+
+  function fadeTo(targetVol, onDone){
+    if(fadeInterval) clearInterval(fadeInterval);
+    fadeInterval = setInterval(() => {
+      const step = 0.06;
+      if(Math.abs(song.volume - targetVol) < step){
+        song.volume = targetVol;
+        clearInterval(fadeInterval);
+        fadeInterval = null;
+        if(targetVol === 0) song.pause();
+        if(onDone) onDone();
+        return;
+      }
+      song.volume += song.volume < targetVol ? step : -step;
+    }, 80);
+  }
+
+  envelopeWrap.addEventListener('click', () => {
+    if(opened || !gameWon) return;
+    opened = true;
+
+    envelopeWrap.classList.add('open');
+
+    song.volume = 0;
+    song.play().catch(()=>{ /* si el archivo no existe aún, no pasa nada */ });
+    fadeTo(0.6);
+
+    setTimeout(()=>{
+      envelopeWrap.classList.add('hide');
+      letter.classList.add('show');
+      musicNote.classList.add('show');
+    }, 550);
+  });
+
+  // Botón: reproducir / pausar la canción manualmente
+  musicNote.addEventListener('click', () => {
+    if(song.paused){
+      song.play().catch(()=>{});
+      fadeTo(0.6);
+      musicIcon.textContent = '🎵';
+      musicLabel.textContent = 'Sonando para ti 😘';
+    } else {
+      fadeTo(0, () => {
+        musicIcon.textContent = '⏸️';
+        musicLabel.textContent = 'Pausada, toca para seguir';
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
